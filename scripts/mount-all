@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -e
+
+BASE_DIR="$(dirname "$0")"
+MERGED_DIR="${BASE_DIR}/merged"
+echo $MERGED_DIR
+mkdir "$MERGED_DIR"
+
+LOWERS=()
+
+echo "[*] Mounting all sqfs files using mktemp..."
+
+for sqfs in "$BASE_DIR"/*.sqfs; do
+    [ -e "$sqfs" ] || continue
+
+    mount_dir=$(mktemp -d /tmp/sqfs_XXXXXX)
+    echo "  → $sqfs -> $mount_dir"
+
+    mount -t squashfs -o loop "$sqfs" "$mount_dir"
+
+    LOWERS+=("$mount_dir")
+done
+
+if [ ${#LOWERS[@]} -eq 0 ]; then
+    echo "No .sqfs files found."
+    exit 1
+fi
+
+LOWER_OPT=$(printf ":%s" "${LOWERS[@]}")
+LOWER_OPT=${LOWER_OPT:1}
+
+echo "[*] Merging all lowerdirs into overlay..."
+mount -t overlay overlay -o lowerdir="$LOWER_OPT" "$MERGED_DIR"
+
+echo "[+] All done!"
+echo "Merged fs at: $MERGED_DIR"
