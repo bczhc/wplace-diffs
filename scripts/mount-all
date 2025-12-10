@@ -4,7 +4,7 @@ set -e
 BASE_DIR="$(dirname "$0")"
 MERGED_DIR="${BASE_DIR}/merged"
 echo $MERGED_DIR
-mkdir "$MERGED_DIR"
+mkdir -p "$MERGED_DIR"
 
 LOWERS=()
 
