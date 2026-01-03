@@ -8,6 +8,32 @@ A repository used to release Wplace incremental backups derived from [wplace-arc
 - **[2025-08](https://github.com/bczhc/wplace-diffs/releases/tag/2025-08)** / **[2025-09](https://github.com/bczhc/wplace-diffs/releases/tag/2025-09)** / **[2025-10](https://github.com/bczhc/wplace-diffs/releases/tag/2025-10)** / **[2025-11](https://github.com/bczhc/wplace-diffs/releases/tag/2025-11)** / **2025-12**
 - **2026-01**
 
+## Quick Use
+
+Starting from `retrieve` version 1.4.0, SquashFS images can be read directly by `retrieve` - no mounting needed any more. Here's a quick example:
+
+Say if one wants to extract chunk `(0, 0)` at snapshot point `2025-10-25T07-38-44.205Z`, just download the initial tarball, plus files under `2025-08`, `2025-09` and `2025-10`. First, please merge them:
+
+```bash
+cat 2025-08.sqfs.* > 2025-08.sqfs
+cat 2025-09.sqfs.* > 2025-09.sqfs
+cat 2025-10.sqfs.* > 2025-10.sqfs
+```
+
+Then, simply use `retrieve` to get the chunk image:
+
+```bash
+retrieve -c 0-0 -b initial-snapshot.tar -o out -t 2025-10-25T07-38-44.205Z \
+  -d 2025-08.sqfs -d 2025-09.sqfs -d 2025-10.sqfs
+```
+
+The output chunk image is at `out/0-0/2025-10-25T07-38-44.205Z.png`.
+
+For more CLI usages, please refer to [wplace-tools](https://github.com/bczhc/wplace-tools).
+
+<details>
+<summary>Old sections (using the mounting approach)</summary>
+
 ## Mount single month
 
 The diff files are packed in SquashFS to enable a transparent compression support. Also, due to GitHub Release file size limitation, the downloaded files are split and should be merged back.
@@ -58,4 +84,5 @@ An example for retrieving chunk (0, 0) at snapshot `2025-10-25T07-38-44.205Z`:
 retrieve -c 0-0 -b initial-snapshot.tar -d merged -o out -t 2025-10-25T07-38-44.205Z
 ```
 
-For more, please refer to [wplace-tools](https://github.com/bczhc/wplace-tools).
+For more CLI usages, please refer to [wplace-tools](https://github.com/bczhc/wplace-tools).
+</details>
