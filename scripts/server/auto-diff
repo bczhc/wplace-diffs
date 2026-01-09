@@ -3,8 +3,19 @@
 require 'shellwords'
 require 'pathname'
 
-LIST_FILE = './list'
 DIFF_OUT_DIR = './diffs'
+DRY_RUN = false
+DRY_RUN_INTERVAL = 1
+
+# @param shell [String]
+def run_cmd(shell)
+  if DRY_RUN
+    puts "dry-run: #{shell}"
+    sleep DRY_RUN_INTERVAL
+  else
+    system shell or fail
+  end
+end
 
 # @return [Array<String>]
 def urls(archive_name)
@@ -31,6 +42,10 @@ end
 ##
 ## The squashfs contains: /a.tar, which is the original decompressed tarball (marked [1] above)
 def fetch_tarball_sqfs(name)
+  if DRY_RUN
+    sleep DRY_RUN_INTERVAL
+    return "#{name}.sqfs"
+  end
   puts "Fetching #{name}..."
   urls = urls name
   lines = "set -e\n"
@@ -38,14 +53,24 @@ def fetch_tarball_sqfs(name)
     lines += "curl -sL #{Shellwords.escape url}\n"
   end
   File.write("curl.sh", lines)
-  system "bash curl.sh | pv | gzip -d | ./tosqfs #{Shellwords.escape name}.sqfs" or fail
+  run_cmd "bash curl.sh | pv | gzip -d | ./tosqfs #{Shellwords.escape name}.sqfs" or fail
   "#{name}.sqfs"
 end
 
-puts "Fetching list of archives..."
-File.write(LIST_FILE, all_archives.join("\n"))
+# ================== MAIN ==================
+puts "Clearing old files..."
+run_cmd 'rm -rfv *.tar *.sqfs'
+run_cmd "rm -rfv #{Shellwords.escape DIFF_OUT_DIR}/.tmp*"
 
-names = File.readlines(LIST_FILE, chomp: true)
+puts "Checking the last diff name..."
+latest = `gh release -R bczhc/wplace-diffs list -L100000 | cut -f1 | grep 'diff.gz$' | sort | tail -n1`.chomp
+latest = extract_datetime_string latest
+puts "Latest diff archive: #{latest}"
+
+puts "Fetching list of archives..."
+names = all_archives
+# drop the last one because it may be incomplete - still in the uploading progress
+names.delete_at(names.length - 1)
 fail unless names.length >= 2
 
 diff_output_dir = DIFF_OUT_DIR
@@ -53,31 +78,21 @@ unless File.exist? diff_output_dir
   Dir.mkdir diff_output_dir
 end
 
-puts "Clearing old files..."
-system 'rm -rfv *.tar *.sqfs'
-system "rm -rfv #{Shellwords.escape DIFF_OUT_DIR}/.tmp*"
-
-latest = Dir.children(DIFF_OUT_DIR).sort.last
-latest = extract_datetime_string latest
-
 latest_snapshot_index = names.find_index(latest)
 fail if latest_snapshot_index == nil
+puts "All murolem archive count: #{names.length}"
 names = names.drop(latest_snapshot_index)
 
-if names.length < 2
-  puts 'No more snapshots to be processed; sleep and exit'
-  sleep(24*3600)
-  exit 0
-end
-
+puts "Use initial parent: #{names[0]}"
+puts "Number of remaining pairs: #{names.each_cons(2).size}"
+puts "The initial archive needs to be downloaded first."
 first_archive = fetch_tarball_sqfs("world-#{names[0]}")
 parent = first_archive
 
-puts "Use initial parent: #{parent}"
-
 names.each_cons(2) do |pair|
+  puts '--------------------------------------'
+  puts "Diffing: #{parent} -> #{pair[1]}"
   diff_target = fetch_tarball_sqfs("world-#{pair[1]}")
-  puts "Diffing: #{parent} -> #{diff_target}"
 
   diff_file_name = "#{pair[1]}.diff"
   diff_file_path = File.join(DIFF_OUT_DIR, diff_file_name)
@@ -88,20 +103,22 @@ names.each_cons(2) do |pair|
 
   # please ensure 'sudo mount/umount' can be run without a password prompt
   puts "Mounting..."
-  system "sudo mount #{Shellwords.escape parent} /mnt/sq1" or fail
-  system "sudo mount #{Shellwords.escape diff_target} /mnt/sq2" or fail
+  run_cmd "sudo mount #{Shellwords.escape parent} /mnt/sq1" or fail
+  run_cmd "sudo mount #{Shellwords.escape diff_target} /mnt/sq2" or fail
 
   diff_cmd = "~/archive-tool diff /mnt/sq1/a.tar /mnt/sq2/a.tar #{Shellwords.escape diff_file_path}"
-  puts "CMD: #{diff_cmd}"
-  result = system diff_cmd
+  unless DRY_RUN
+    puts "CMD: #{diff_cmd}"
+  end
+  result = run_cmd diff_cmd
   puts "Unmounting..."
-  system 'sudo umount /mnt/sq1; sudo umount /mnt/sq2'
+  run_cmd 'sudo umount /mnt/sq1; sudo umount /mnt/sq2'
   result or fail
 
-  system "gzip #{Shellwords.escape diff_file_path}" or fail
-  system "./upload #{Shellwords.escape diff_file_path}.gz" or fail
-  system "rm -rf #{Shellwords.escape diff_file_path}.gz" or fail
-  system "rm #{Shellwords.escape parent}" or fail
+  run_cmd "gzip #{Shellwords.escape diff_file_path}" or fail
+  run_cmd "./upload #{Shellwords.escape diff_file_path}.gz" or fail
+  run_cmd "rm -rf #{Shellwords.escape diff_file_path}.gz" or fail
+  run_cmd "rm #{Shellwords.escape parent}" or fail
 
   parent = diff_target
 end

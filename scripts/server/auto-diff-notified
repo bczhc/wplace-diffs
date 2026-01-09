@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if ./auto-diff; then
+	../create-issue "Finished! $(date)"
+else
+	../create-issue "Failed! $(date)"
+fi
