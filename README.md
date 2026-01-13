@@ -5,7 +5,7 @@ A repository used to release Wplace incremental backups derived from [wplace-arc
 ## Download releases
 
 - **[Initial backup](https://github.com/bczhc/wplace-diffs/releases/tag/initial)**: The starting point (full snapshot).
-- **[2025-08](https://github.com/bczhc/wplace-diffs/releases/tag/2025-08)** / **[2025-09](https://github.com/bczhc/wplace-diffs/releases/tag/2025-09)** / **[2025-10](https://github.com/bczhc/wplace-diffs/releases/tag/2025-10)** / **[2025-11](https://github.com/bczhc/wplace-diffs/releases/tag/2025-11)** / **2025-12**
+- **[2025-08](https://github.com/bczhc/wplace-diffs/releases/tag/2025-08)** / **[2025-09](https://github.com/bczhc/wplace-diffs/releases/tag/2025-09)** / **[2025-10](https://github.com/bczhc/wplace-diffs/releases/tag/2025-10)** / **[2025-11](https://github.com/bczhc/wplace-diffs/releases/tag/2025-11)** / **[2025-12](https://github.com/bczhc/wplace-diffs/releases/tag/2025-12)**
 - **2026-01**
 
 ## Quick Use
