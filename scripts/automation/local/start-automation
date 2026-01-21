@@ -1,0 +1,11 @@
+#!/bin/bash
+
+while :; do
+	date
+	start="`ls diffs | tail -n1 | rg '(.*)\.diff' -r 'world-$1'`" && ./names.rb "$start" && ./gen.rb > batch
+	unset http_proxy; unset https_proxy
+	bash batch
+	echo 'Sleep for 10 minutes...'
+	echo
+	sleep 600 # 10 min
+done
