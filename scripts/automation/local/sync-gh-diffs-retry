@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+# 进入脚本所在目录，确保相对路径正确
+cd "$(dirname "$0")"
+
+SCRIPT="./sync-gh-diffs.rb"
+MAX_RETRIES=5
+COUNT=0
+SUCCESS=false
+
+echo "[$(date)] 开始同步任务..."
+
+while [ $COUNT -lt $MAX_RETRIES ]; do
+    COUNT=$((COUNT + 1))
+    
+    # 执行 Ruby 脚本
+    $SCRIPT
+    
+    if [ $? -eq 0 ]; then
+        echo "[$(date)] 成功：同步在第 $COUNT 次尝试时完成。"
+        SUCCESS=true
+        break
+    else
+        echo "[$(date)] 警告：第 $COUNT 次尝试失败。"
+        if [ $COUNT -lt $MAX_RETRIES ]; then
+            echo "等待 5 秒后重试..."
+            sleep 5
+        fi
+    fi
+done
+
+if [ "$SUCCESS" = false ]; then
+    echo "[$(date)] 错误：已达到最大重试次数 ($MAX_RETRIES)，同步失败。"
+    exit 1
+fi
