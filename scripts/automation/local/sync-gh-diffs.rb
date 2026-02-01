@@ -21,12 +21,14 @@ end
 
 # 1. 获取已存在的 Release 列表
 log "正在同步远程 Release 列表..."
-list_cmd = "gh release -R #{REPO.shellescape} list -L 10000 | cut -f1"
+list_cmd = "gh release -R #{REPO.shellescape} list --exclude-drafts -L 10000 | cut -f1"
 remote_output = `#{list_cmd}`
 unless $?.success?
   log "错误：无法连接到 GitHub 仓库。"
   exit 1
 end
+
+fail 'Invalid gh output' unless remote_output.include?('Initial')
 
 existing_releases = remote_output.split("\n").map(&:strip).to_set
 
