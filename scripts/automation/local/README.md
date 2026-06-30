@@ -1,1 +1,1 @@
-These scripts are used on my own machine to automate diff creation. Vibe coded by Gemini.
+AI generated scripts used to help the automated diff creation on my own machine.
